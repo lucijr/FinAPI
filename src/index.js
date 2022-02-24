@@ -6,21 +6,22 @@ const app = express();
 app.use(express.json());
 //Fake Tables
 const customers = [];
-//Functions
-function customerAlreadyExists(cpf) {
-  const customer = customers.some((customer) => customer.cpf === cpf);
-  return customer;
-}
-function getCustomerByCPF(cpf) {
+//Middleware
+function verifyIfExistsAccountCpf(request, response, next) {
+  const { cpf } = request.headers;
   const customer = customers.find((customer) => customer.cpf === cpf);
-  return customer;
+  if (!customer) {
+    return response.status(404).send({ error: "Customer not found" });
+  }
+  request.customer = customer;
+  return next();
 }
 // Create account
 app.post("/accounts", (request, response) => {
   const { name, cpf } = request.body;
-  const customer = customerAlreadyExists(cpf);
+  const customer = customers.some((customer) => customer.cpf === cpf);
   if (customer) {
-    return response.status(400).send({ error: "Customer already exists!" });
+    return response.status(404).send({ error: "Customer already exists" });
   }
   customers.push({
     name,
@@ -30,14 +31,11 @@ app.post("/accounts", (request, response) => {
   });
   return response.status(201).send(customers);
 });
+//Add Middleware in routes
+app.use(verifyIfExistsAccountCpf);
 // Get statment
 app.get("/statments", function (request, response) {
-  const { cpf } = request.headers;
-  const customer = getCustomerByCPF(cpf);
-  if (!customer) {
-    return response.status(404).send({ error: "Customer not found!" });
-  }
-  return response.json(customer.statment);
+  return response.json(request.customer.statment);
 });
 //Finish Users
 app.listen(3333);
