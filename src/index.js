@@ -27,15 +27,28 @@ app.post("/accounts", (request, response) => {
     name,
     cpf,
     id: uuidv4(),
-    statment: [],
+    statement: [],
   });
   return response.status(201).send(customers);
 });
 //Add Middleware in routes
 app.use(verifyIfExistsAccountCpf);
-// Get statment
-app.get("/statments", function (request, response) {
-  return response.json(request.customer.statment);
+//Get statement
+app.get("/statements", verifyIfExistsAccountCpf, function (request, response) {
+  return response.json(request.customer.statement);
+});
+//Post Deposit
+app.post("/deposits", verifyIfExistsAccountCpf, function (request, response) {
+  const { description, amount } = request.body;
+  const { customer } = request;
+  const statementOperation = {
+    description,
+    amount,
+    created_at: new Date(),
+    type: "credit",
+  };
+  customer.statement.push(statementOperation);
+  return response.status(201).json({ status: "success" });
 });
 //Finish Users
 app.listen(3333);
